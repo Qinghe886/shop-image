@@ -42,7 +42,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri App
-        run: npx tauri build
+        run: npm run tauri:build
 
       - name: Upload macOS artifacts
         if: matrix.os == 'macos-latest'

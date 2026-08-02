@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "identifier": "com.storepic.works",
   "build": {
-    "beforeDevCommand": "TAURI=1 npm run dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3006",
-    "beforeBuildCommand": "TAURI=1 npm run build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../out"
   },
   "app": {

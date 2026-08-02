@@ -1,0 +1,26 @@
+[package]
+name = "storepic-works"
+version = "1.0.0"
+description = "图铺工坊 | StorePic Works - 免费电商图片压缩与转换"
+authors = ["StorePic Works"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "storepic_works_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

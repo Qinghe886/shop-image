@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicehash/tauri/main/tooling/cli/schema.json",
+  "productName": "StorePic Works",
+  "version": "1.0.0",
+  "identifier": "com.storepic.works",
+  "build": {
+    "beforeDevCommand": "TAURI=1 npm run dev",
+    "devUrl": "http://localhost:3006",
+    "beforeBuildCommand": "TAURI=1 npm run build",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "图铺工坊 | StorePic Works",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

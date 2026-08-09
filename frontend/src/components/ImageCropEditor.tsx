@@ -11,6 +11,24 @@ const aspectValues: Record<CropAspect, number | undefined> = {
   '4:5': 4 / 5,
   '3:4': 3 / 4,
   '16:9': 16 / 9,
+  '1inch': 25 / 35,
+  'small1inch': 22 / 32,
+  'large1inch': 33 / 48,
+  'small2inch': 35 / 45,
+  '2inch': 35 / 49,
+};
+
+const aspectLabels: Partial<Record<CropAspect, string>> = {
+  free: '自由',
+  '1:1': '1:1',
+  '4:5': '4:5',
+  '3:4': '3:4',
+  '16:9': '16:9',
+  '1inch': '1寸',
+  'small1inch': '小1寸',
+  'large1inch': '大1寸',
+  'small2inch': '小2寸',
+  '2inch': '2寸',
 };
 
 type FreeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -269,7 +287,7 @@ export default function ImageCropEditor({ item, index, total, onClose, onSave, o
           </div>
 
           <aside className="crop-controls">
-            <section><label>裁切比例</label><div className="crop-aspects">{(['free', '1:1', '4:5', '3:4', '16:9'] as CropAspect[]).map((value) => <button type="button" key={value} className={settings.aspect === value ? 'active' : ''} onClick={() => selectAspect(value)}>{value === 'free' ? '自由' : value}</button>)}</div><p className="crop-help">{settings.aspect === 'free' ? '拖动图片定位；拖动绿色手柄调整裁切框大小。' : `输出比例 ${settings.aspect}，拖动图片选择主体。`}</p></section>
+            <section><label>裁切比例</label><div className="crop-aspects">{((['free', '1:1', '4:5', '3:4', '16:9', '1inch', 'small1inch', 'large1inch', 'small2inch', '2inch'] as CropAspect[])).map((value) => <button type="button" key={value} className={settings.aspect === value ? 'active' : ''} onClick={() => selectAspect(value)}>{aspectLabels[value] || value}</button>)}</div><p className="crop-help">{settings.aspect === 'free' ? '拖动图片定位；拖动绿色手柄调整裁切框大小。' : `输出比例 ${settings.aspect}，拖动图片选择主体。`}</p></section>
             <section><div className="crop-control-title"><label htmlFor="crop-zoom">图片缩放</label><output>{Math.round(zoom * 100)}%</output></div><input id="crop-zoom" type="range" min="1" max="4" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />{settings.aspect === 'free' && <div className="crop-free-size"><div><span>裁切框宽度</span><input aria-label="自由裁切宽度" type="range" min="20" max="100" value={freeCropPercent.width} onChange={(event) => setFreeCropPercent((current) => ({ ...current, width: Number(event.target.value) }))} /></div><div><span>裁切框高度</span><input aria-label="自由裁切高度" type="range" min="20" max="100" value={freeCropPercent.height} onChange={(event) => setFreeCropPercent((current) => ({ ...current, height: Number(event.target.value) }))} /></div></div>}<div className="crop-dimensions">预览尺寸 {Math.round(mediaSize.width * normalizedSettings.width)} × {Math.round(mediaSize.height * normalizedSettings.height)} px</div></section>
             <section><label>旋转</label><div className="crop-action-grid"><button type="button" onClick={() => rotate(-90)}>↶ 左转 90°</button><button type="button" onClick={() => rotate(90)}>↷ 右转 90°</button></div></section>
             <section><label>翻转</label><div className="crop-action-grid"><button type="button" className={settings.flipHorizontal ? 'active' : ''} onClick={() => setSettings((current) => ({ ...current, flipHorizontal: !current.flipHorizontal }))}>水平翻转</button><button type="button" className={settings.flipVertical ? 'active' : ''} onClick={() => setSettings((current) => ({ ...current, flipVertical: !current.flipVertical }))}>垂直翻转</button></div></section>

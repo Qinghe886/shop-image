@@ -108,3 +108,103 @@ export async function convertImage(file: File, settings: OutputSettings, crop?: 
     name: outputFileName(file.name, format, settings),
   };
 }
+
+/**
+ * 十六进制颜色转 RGB
+ */
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  };
+}
+
+/**
+ * 证件照专用处理：裁切 + 缩放到精确尺寸 + 背景替换
+ */
+export async function processIdPhoto(
+  file: File,
+  crop: CropSettings | undefined,
+  specWidth: number,
+  specHeight: number,
+  bgSettings: {
+    targetColor: { r: number; g: number; b: number };
+    tolerance: number;
+    feather: number;
+    bgColor: string;
+  },
+): Promise<HTMLCanvasElement> {
+  // 1. 使用现有裁切管线（保持原始分辨率，不在此阶段缩放）
+  const cropped = await renderCroppedCanvas(file, crop);
+  const { width: srcW, height: srcH } = cropped;
+
+  // 2. 缩放到目标尺寸（等比缩放，居中，白底填充）
+  const canvas = document.createElement('canvas');
+  canvas.width = specWidth;
+  canvas.height = specHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('Canvas 不可用');
+
+  // 白色底色（填充可能的黑边）
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, specWidth, specHeight);
+
+  // 等比缩放，居中放置
+  const scale = Math.min(specWidth / srcW, specHeight / srcH);
+  const drawW = Math.round(srcW * scale);
+  const drawH = Math.round(srcH * scale);
+  const dx = Math.floor((specWidth - drawW) / 2);
+  const dy = Math.floor((specHeight - drawH) / 2);
+  ctx.drawImage(cropped, dx, dy, drawW, drawH);
+
+  // 3. 背景去除（内联调用避免额外 import）
+  const imageData = ctx.getImageData(0, 0, specWidth, specHeight);
+  const { data } = imageData;
+
+  // 逐像素 RG B 距离计算
+  const { targetColor, tolerance, feather } = bgSettings;
+  const maxDist = tolerance + feather;
+  const outputData = new Uint8ClampedArray(data.length);
+
+  for (let i = 0; i < data.length; i += 4) {
+    const dr = data[i] - targetColor.r;
+    const dg = data[i + 1] - targetColor.g;
+    const db = data[i + 2] - targetColor.b;
+    const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+
+    let alpha = 255;
+    if (dist <= tolerance) {
+      alpha = 0;
+    } else if (dist <= maxDist && maxDist > tolerance) {
+      alpha = Math.round(((dist - tolerance) / feather) * 255);
+    }
+    outputData[i] = data[i];
+    outputData[i + 1] = data[i + 1];
+    outputData[i + 2] = data[i + 2];
+    outputData[i + 3] = Math.min(255, Math.max(0, alpha));
+  }
+
+  // 合成到新背景
+  const result = document.createElement('canvas');
+  result.width = specWidth;
+  result.height = specHeight;
+  const rCtx = result.getContext('2d');
+  if (!rCtx) throw new Error('Canvas 不可用');
+
+  rCtx.fillStyle = bgSettings.bgColor;
+  rCtx.fillRect(0, 0, specWidth, specHeight);
+
+  const bgImageData = rCtx.getImageData(0, 0, specWidth, specHeight);
+  const bgData = bgImageData.data;
+  for (let i = 0; i < outputData.length; i += 4) {
+    const a = outputData[i + 3] / 255;
+    bgData[i] = Math.round(outputData[i] * a + bgData[i] * (1 - a));
+    bgData[i + 1] = Math.round(outputData[i + 1] * a + bgData[i + 1] * (1 - a));
+    bgData[i + 2] = Math.round(outputData[i + 2] * a + bgData[i + 2] * (1 - a));
+  }
+  rCtx.putImageData(bgImageData, 0, 0);
+
+  return result;
+}

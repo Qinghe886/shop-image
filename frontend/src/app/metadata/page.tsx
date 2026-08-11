@@ -110,7 +110,7 @@ export default function MetadataPage() {
       a.click();
       URL.revokeObjectURL(url);
       setWriteDone(true);
-    } catch { alert('写入失败'); }
+    } catch (e) { alert('写入失败: ' + (e instanceof Error ? e.message : String(e))); }
     setWriting(false);
   };
 

@@ -134,13 +134,13 @@ export async function writeExif(
         if (fields.copyright) exifObj['0th'][piexif.ImageIFD.Copyright] = fields.copyright;
         if (fields.description) exifObj['0th'][piexif.ImageIFD.ImageDescription] = fields.description;
         if (fields.dateTime) {
-          const dt = typeof fields.dateTime === 'string' ? fields.dateTime : formatExifDateTime(fields.dateTime);
+          const dt = formatExifDateTime(fields.dateTime);
           exifObj['0th'][piexif.ImageIFD.DateTime] = dt;
         }
 
         // ── Exif IFD ──
         if (fields.dateTime) {
-          const dt = typeof fields.dateTime === 'string' ? fields.dateTime : formatExifDateTime(fields.dateTime);
+          const dt = formatExifDateTime(fields.dateTime);
           exifObj['Exif'][piexif.ExifIFD.DateTimeOriginal] = dt;
         }
 

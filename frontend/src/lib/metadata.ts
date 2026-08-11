@@ -121,17 +121,7 @@ export async function writeExif(
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const buffer = reader.result as ArrayBuffer;
-        const bytes = new Uint8Array(buffer);
-
-        // ArrayBuffer → binary string（分块避免栈溢出）
-        let jpegStr = '';
-        const CHUNK = 8192;
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-          const end = Math.min(i + CHUNK, bytes.length);
-          const slice = bytes.subarray(i, end);
-          jpegStr += String.fromCharCode.apply(null, Array.from(slice) as any);
-        }
+        const jpegStr = reader.result as string;
 
         // 先清除旧 EXIF，避免双重 APP1 段导致图片损坏
         const dataUri = piexif.remove(jpegStr);
@@ -189,7 +179,7 @@ export async function writeExif(
       } catch (e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('读取失败'));
-    reader.readAsArrayBuffer(file);
+    reader.readAsBinaryString(file);
   });
 }
 

@@ -5,20 +5,20 @@ import { extractMetadata, stripExif, writeExif, type MetaGroup } from '@/lib/met
 import Link from 'next/link';
 
 export default function MetadataPage() {
-  const [tab, setTab] = useState<'read' | 'write'>('read');
+  const [tab, setTab] = useState<'read' | 'write' | 'strip'>('read');
   const [groups, setGroups] = useState<MetaGroup[]>([]);
   const [fileName, setFileName] = useState('');
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Write tab
+  // ── Strip tab ──
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const [stripping, setStripping] = useState(false);
   const [stripDone, setStripDone] = useState(0);
   const [singleFile, setSingleFile] = useState<File | null>(null);
 
-  // ── Write tab: EXIF 写入 ──
+  // ── Write tab ──
   const [writeFile, setWriteFile] = useState<File | null>(null);
   const [artist, setArtist] = useState('');
   const [copyright, setCopyright] = useState('');
@@ -47,7 +47,7 @@ export default function MetadataPage() {
 
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); };
 
-  // ── Write tab: batch strip ──
+  // ── Strip tab ──
   const handleBatchFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setBatchFiles(files); setStripDone(0);
@@ -86,6 +86,7 @@ export default function MetadataPage() {
     setStripping(false);
   };
 
+  // ── Write tab ──
   const handleWriteExif = async () => {
     if (!writeFile) return;
     setWriting(true); setWriteDone(false);
@@ -124,8 +125,9 @@ export default function MetadataPage() {
 
       {/* Tabs */}
       <div className="meta-tabs">
-        <button className={tab === 'read' ? 'active' : ''} onClick={() => setTab('read')}>元信息解析（只读）</button>
-        <button className={tab === 'write' ? 'active' : ''} onClick={() => setTab('write')}>EXIF 写入 / 批量清除</button>
+        <button className={tab === 'read' ? 'active' : ''} onClick={() => setTab('read')}>元信息解析</button>
+        <button className={tab === 'write' ? 'active' : ''} onClick={() => setTab('write')}>EXIF 写入</button>
+        <button className={tab === 'strip' ? 'active' : ''} onClick={() => setTab('strip')}>EXIF 清除</button>
       </div>
 
       {/* ── READ TAB ── */}
@@ -176,55 +178,6 @@ export default function MetadataPage() {
             <p>EXIF 是 JPEG/TIFF 规范的元数据格式。PNG、WEBP 等格式不使用 EXIF。全部处理在本地完成。</p>
           </div>
 
-          {/* Batch strip */}
-          <div className="meta-card">
-            <div className="meta-card-head">
-              <span>批量清除 EXIF</span>
-              <small>拖入多张 JPEG，一键抹掉全部 EXIF（含 GPS 定位、机型、拍摄时间）</small>
-            </div>
-            <section
-              className={`meta-drop meta-drop-sm ${dragOver ? 'drag-over' : ''}`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); setBatchFiles(Array.from(e.dataTransfer.files)); }}
-              onClick={() => document.getElementById('batch-input')?.click()}
-            >
-              <span className="meta-drop-icon">📁</span>
-              <p className="meta-drop-title">点击选择 / 拖拽多张 JPEG</p>
-              <p className="meta-drop-hint">已选 {batchFiles.length} 张</p>
-              <input id="batch-input" type="file" accept="image/jpeg" multiple className="meta-file-hidden" onChange={handleBatchFiles} />
-            </section>
-            {batchFiles.length > 0 && (
-              <div className="meta-actions">
-                <button className="meta-btn" onClick={batchStrip} disabled={stripping}>
-                  {stripping ? '处理中...' : `清除全部 EXIF 并下载（${batchFiles.length} 张）`}
-                </button>
-                {stripDone > 0 && <p className="meta-done">已处理 {stripDone} / {batchFiles.length} 张</p>}
-              </div>
-            )}
-          </div>
-
-          {/* Single strip */}
-          <div className="meta-card">
-            <div className="meta-card-head">
-              <span>单张 JPEG：选择性清除</span>
-              <small>精确逐张处理，抹除敏感元数据后下载</small>
-            </div>
-            <div className="meta-actions">
-              <button className="meta-btn meta-btn-outline" onClick={() => document.getElementById('single-input')?.click()}>
-                {singleFile ? singleFile.name : '选择 JPEG 文件'}
-              </button>
-              <input id="single-input" type="file" accept="image/jpeg" className="meta-file-hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSingleFile(f); }} />
-              {singleFile && (
-                <button className="meta-btn" onClick={singleStrip} disabled={stripping}>
-                  {stripping ? '处理中...' : '清除 EXIF 并下载'}
-                </button>
-              )}
-              {stripDone === 1 && <p className="meta-done">已完成</p>}
-            </div>
-          </div>
-
-          {/* EXIF 写入 */}
           <div className="meta-card">
             <div className="meta-card-head">
               <span>写入 EXIF 信息</span>
@@ -290,6 +243,64 @@ export default function MetadataPage() {
                 </button>
                 {writeDone && <p className="meta-done">写入完成 ✓</p>}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STRIP TAB ── */}
+      {tab === 'strip' && (
+        <div className="meta-body">
+          <div className="meta-notice">
+            <strong>仅支持 JPEG（.jpg / .jpeg）</strong>
+            <p>清除操作将抹掉全部 EXIF 元数据（含 GPS 定位、机型、拍摄时间、版权信息等）。处理后重新编码为 JPEG。全部在本地完成。</p>
+          </div>
+
+          {/* Batch strip */}
+          <div className="meta-card">
+            <div className="meta-card-head">
+              <span>批量清除 EXIF</span>
+              <small>拖入多张 JPEG，一键抹掉全部 EXIF（含 GPS 定位、机型、拍摄时间）</small>
+            </div>
+            <section
+              className={`meta-drop meta-drop-sm ${dragOver ? 'drag-over' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); setBatchFiles(Array.from(e.dataTransfer.files)); }}
+              onClick={() => document.getElementById('batch-input')?.click()}
+            >
+              <span className="meta-drop-icon">📁</span>
+              <p className="meta-drop-title">点击选择 / 拖拽多张 JPEG</p>
+              <p className="meta-drop-hint">已选 {batchFiles.length} 张</p>
+              <input id="batch-input" type="file" accept="image/jpeg" multiple className="meta-file-hidden" onChange={handleBatchFiles} />
+            </section>
+            {batchFiles.length > 0 && (
+              <div className="meta-actions">
+                <button className="meta-btn" onClick={batchStrip} disabled={stripping}>
+                  {stripping ? '处理中...' : `清除全部 EXIF 并下载（${batchFiles.length} 张）`}
+                </button>
+                {stripDone > 0 && <p className="meta-done">已处理 {stripDone} / {batchFiles.length} 张</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Single strip */}
+          <div className="meta-card">
+            <div className="meta-card-head">
+              <span>单张清除 EXIF</span>
+              <small>精确逐张处理，抹除敏感元数据后下载</small>
+            </div>
+            <div className="meta-actions">
+              <button className="meta-btn meta-btn-outline" onClick={() => document.getElementById('single-input')?.click()}>
+                {singleFile ? singleFile.name : '选择 JPEG 文件'}
+              </button>
+              <input id="single-input" type="file" accept="image/jpeg" className="meta-file-hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSingleFile(f); }} />
+              {singleFile && (
+                <button className="meta-btn" onClick={singleStrip} disabled={stripping}>
+                  {stripping ? '处理中...' : '清除 EXIF 并下载'}
+                </button>
+              )}
+              {stripDone === 1 && <p className="meta-done">已完成</p>}
             </div>
           </div>
         </div>

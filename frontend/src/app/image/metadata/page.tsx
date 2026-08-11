@@ -4,12 +4,11 @@ import { useState, useRef, useCallback } from 'react';
 import { extractMetadata, stripExif, type MetaGroup } from '@/lib/metadata';
 import Link from 'next/link';
 
-function CameraIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>); }
-function FileIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>); }
-function FolderIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>); }
-function ShieldIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>); }
-function EyeIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>); }
-function DownloadIcon() { return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="meta-svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>); }
+function CameraIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><rect x="6" y="12" width="36" height="26" rx="4" stroke="currentColor" strokeWidth="2.5"/><circle cx="24" cy="25" r="7" stroke="currentColor" strokeWidth="2.5"/><circle cx="24" cy="25" r="2.5" fill="currentColor"/><path d="M16 12l2-5h12l2 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>); }
+function FileIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><rect x="10" y="4" width="28" height="40" rx="3" stroke="currentColor" strokeWidth="2.5"/><path d="M18 4v8a2 2 0 0 0 2 2h8" stroke="currentColor" strokeWidth="2.5" fill="currentColor" fillOpacity=".1"/><line x1="16" y1="24" x2="32" y2="24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="16" y1="30" x2="32" y2="30" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="16" y1="36" x2="24" y2="36" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>); }
+function FolderIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><path d="M6 12a3 3 0 0 1 3-3h10l4 4h16a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V12z" stroke="currentColor" strokeWidth="2.5"/></svg>); }
+function SearchIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><circle cx="22" cy="22" r="13" stroke="currentColor" strokeWidth="2.5"/><line x1="32" y1="32" x2="42" y2="42" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>); }
+function ShieldIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><path d="M24 4L8 12v12c0 12 16 20 16 20s16-8 16-20V12L24 4z" stroke="currentColor" strokeWidth="2.5"/><path d="M17 23l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>); }
 
 export default function MetadataPage() {
   const [tab, setTab] = useState<'read' | 'write'>('read');
@@ -83,7 +82,7 @@ export default function MetadataPage() {
             onDrop={onDrop}
             onClick={() => fileRef.current?.click()}
           >
-            <span className="meta-drop-icon">{fileName ? <FileIcon /> : <CameraIcon />}</span>
+            <span className="meta-drop-icon">{fileName ? <SearchIcon /> : <CameraIcon />}</span>
             <p className="meta-drop-title">{fileName || '点击选择 / 拖拽 / 粘贴照片'}</p>
             <p className="meta-drop-hint">查看照片中隐藏的拍摄时间、GPS位置、相机型号等信息</p>
             <input ref={fileRef} type="file" accept="image/*" className="meta-file-hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />

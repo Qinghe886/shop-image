@@ -68,7 +68,7 @@ body{font-size:14px;line-height:1.6}.site-header{height:64px;padding-inline:max(
 .meta-drop:hover,.meta-drop.drag-over{border-color:#68B936;background:#f3faf3}
 .meta-drop-sm{height:140px}
 .meta-drop-icon{margin-bottom:8px;color:#68B936}
-.meta-svg{width:44px;height:44px}
+.meta-svg{width:48px;height:48px;color:#68B936}
 .meta-drop-title{font-size:16px;font-weight:700;color:#333;margin:0}
 .meta-drop-hint{font-size:13px;color:#999;margin:6px 0 0}
 .meta-file-hidden{display:none}

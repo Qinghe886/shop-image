@@ -342,7 +342,7 @@ export default function ImageStudio({ selectedPresetId, presetRequestVersion, on
           <button type="button" className={mode === 'general' ? 'active' : ''} aria-pressed={mode === 'general'} onClick={() => switchMode('general')}><span>通用模式</span><small>压缩与转换</small></button>
           <button type="button" className={mode === 'idphoto' ? 'active' : ''} aria-pressed={mode === 'idphoto'} onClick={() => switchMode('idphoto')}><span>证件照</span><small>换底排版</small></button>
         </div>
-        {mode !== 'idphoto' && (mode === 'ecommerce' ? (
+        {mode !== 'idphoto' ? (mode === 'ecommerce' ? (
           <>
             <div className="setting-block">
               <label>电商预设</label>
@@ -378,7 +378,7 @@ export default function ImageStudio({ selectedPresetId, presetRequestVersion, on
               <span className="crop-entry-action">编辑</span>
             </button>
           </div>
-        )}
+        )) : null}
         {mode === 'idphoto' && (
           <div className="idphoto-panel compact">
             <div className="idphoto-context"><small>ID PHOTO</small><strong>证件照处理</strong></div>

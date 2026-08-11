@@ -130,28 +130,22 @@ export async function processIdPhoto(
   specWidth: number,
   specHeight: number,
   bgSettings: {
-    targetColor: { r: number; g: number; b: number };
     tolerance: number;
     feather: number;
     bgColor: string;
   },
 ): Promise<HTMLCanvasElement> {
-  // 1. 使用现有裁切管线（保持原始分辨率，不在此阶段缩放）
+  // 1. 裁切
   const cropped = await renderCroppedCanvas(file, crop);
   const { width: srcW, height: srcH } = cropped;
 
-  // 2. 缩放到目标尺寸（等比缩放，居中，白底填充）
+  // 2. 等比缩放到目标尺寸，居中放置
   const canvas = document.createElement('canvas');
   canvas.width = specWidth;
   canvas.height = specHeight;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) throw new Error('Canvas 不可用');
 
-  // 白色底色（填充可能的黑边）
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, specWidth, specHeight);
-
-  // 等比缩放，居中放置
   const scale = Math.min(specWidth / srcW, specHeight / srcH);
   const drawW = Math.round(srcW * scale);
   const drawH = Math.round(srcH * scale);
@@ -159,12 +153,14 @@ export async function processIdPhoto(
   const dy = Math.floor((specHeight - drawH) / 2);
   ctx.drawImage(cropped, dx, dy, drawW, drawH);
 
-  // 3. 背景去除（内联调用避免额外 import）
+  // 3. 自动检测背景色（从图像边缘采样，取各通道中位数）
   const imageData = ctx.getImageData(0, 0, specWidth, specHeight);
-  const { data } = imageData;
+  const { detectBackgroundColor } = await import('./background-removal');
+  const targetColor = detectBackgroundColor(imageData, 5);
 
-  // 逐像素 RG B 距离计算
-  const { targetColor, tolerance, feather } = bgSettings;
+  // 4. 背景去除
+  const { data } = imageData;
+  const { tolerance, feather } = bgSettings;
   const maxDist = tolerance + feather;
   const outputData = new Uint8ClampedArray(data.length);
 
@@ -186,7 +182,7 @@ export async function processIdPhoto(
     outputData[i + 3] = Math.min(255, Math.max(0, alpha));
   }
 
-  // 合成到新背景
+  // 5. 合成到新背景
   const result = document.createElement('canvas');
   result.width = specWidth;
   result.height = specHeight;

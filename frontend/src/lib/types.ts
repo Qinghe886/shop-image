@@ -2,7 +2,7 @@ export type OutputFormat = 'webp' | 'avif' | 'jpeg' | 'png';
 export type OutputTarget = OutputFormat | 'original';
 
 export type PresetId = 'general' | 'woocommerce' | 'shopify' | 'amazon' | 'tiktok';
-export type StudioMode = 'ecommerce' | 'general' | 'idphoto';
+export type StudioMode = 'ecommerce' | 'general' | 'idphoto' | 'metadata';
 
 export type FileNameMode = 'original' | 'detailed';
 export type CropAspect = 'free' | '1:1' | '4:5' | '3:4' | '16:9' | '1inch' | 'small1inch' | 'large1inch' | 'small2inch' | '2inch';

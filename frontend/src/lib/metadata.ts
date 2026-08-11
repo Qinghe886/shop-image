@@ -31,9 +31,7 @@ export async function extractMetadata(file: File): Promise<MetaGroup[]> {
       iptc: true,
       tiff: true,
       interop: true,
-      icc: true,      // ICC 色彩配置
-      ifd0: true,
-      ifd1: true,
+      icc: true,
     });
 
     if (!data) {

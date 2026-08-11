@@ -122,6 +122,8 @@ export async function writeExif(
     reader.onload = () => {
       try {
         const jpeg = reader.result as string;
+        // 先清除旧 EXIF，避免双重 APP1 段导致图片损坏
+        const cleanJpeg = piexif.remove(jpeg);
         const exifObj: any = { '0th': {}, Exif: {}, GPS: {} };
 
         // ── 0th IFD ──
@@ -163,7 +165,7 @@ export async function writeExif(
         if (Object.keys(exifObj.GPS).length === 0) delete exifObj.GPS;
 
         const exifBytes = piexif.dump(exifObj);
-        const newJpeg = piexif.insert(exifBytes, jpeg);
+        const newJpeg = piexif.insert(exifBytes, cleanJpeg);
         const arr = new Uint8Array(newJpeg.length);
         for (let i = 0; i < newJpeg.length; i++) arr[i] = newJpeg.charCodeAt(i) & 0xff;
         resolve(new Blob([arr], { type: 'image/jpeg' }));

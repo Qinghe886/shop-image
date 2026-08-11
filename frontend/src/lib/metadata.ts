@@ -122,11 +122,7 @@ export async function writeExif(
     reader.onload = () => {
       try {
         const jpegStr = reader.result as string;
-
-        // 先清除旧 EXIF，避免双重 APP1 段导致图片损坏
-        const dataUri = piexif.remove(jpegStr);
-        // remove 返回 data URI，手动解码回二进制字符串
-        const cleanBinary = atob(dataUri.split(',')[1]);
+        // piexif.insert 内部会自动清除旧 EXIF 再插入新的，无需手动 remove
 
         const exifObj: any = { '0th': {}, Exif: {}, GPS: {} };
 
@@ -169,8 +165,7 @@ export async function writeExif(
         if (Object.keys(exifObj.GPS).length === 0) delete exifObj.GPS;
 
         const exifBytes = piexif.dump(exifObj);
-        // insert 接受二进制字符串，返回二进制字符串
-        const newJpeg = piexif.insert(exifBytes, cleanBinary);
+        const newJpeg = piexif.insert(exifBytes, jpegStr);
 
         // 二进制字符串 → Uint8Array
         const out = new Uint8Array(newJpeg.length);

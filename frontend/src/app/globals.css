@@ -67,7 +67,8 @@ body{font-size:14px;line-height:1.6}.site-header{height:64px;padding-inline:max(
 .meta-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;border:2px dashed #d0dcd0;border-radius:16px;background:#fafcfa;cursor:pointer;transition:all .2s}
 .meta-drop:hover,.meta-drop.drag-over{border-color:#68B936;background:#f3faf3}
 .meta-drop-sm{height:140px}
-.meta-drop-icon{font-size:44px;margin-bottom:8px}
+.meta-drop-icon{margin-bottom:8px;color:#68B936}
+.meta-svg{width:44px;height:44px}
 .meta-drop-title{font-size:16px;font-weight:700;color:#333;margin:0}
 .meta-drop-hint{font-size:13px;color:#999;margin:6px 0 0}
 .meta-file-hidden{display:none}

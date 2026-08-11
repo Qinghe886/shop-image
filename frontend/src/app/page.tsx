@@ -45,7 +45,7 @@ export default function Home() {
       <header className="site-header">
         <a href="#" className="wordmark"><span>图铺工坊</span><i>StorePic Works</i></a>
         <span aria-hidden="true" />
-        <nav><a href="#tool">图片转换</a><a href="#presets">电商预设</a><a href="/metadata">元信息</a><a href="#privacy">隐私</a></nav>
+        <nav><a href="#tool">图片转换</a><a href="#presets">电商预设</a><a href="/image/metadata">清除照片信息</a><a href="#privacy">隐私</a></nav>
       </header>
 
       <div className="studio-section"><ImageStudio selectedPresetId={selectedPresetId} presetRequestVersion={presetRequestVersion} onPresetChange={setSelectedPresetId} /></div>

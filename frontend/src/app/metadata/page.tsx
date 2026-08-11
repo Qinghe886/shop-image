@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { extractMetadata, stripExif, type MetaGroup } from '@/lib/metadata';
+import { extractMetadata, stripExif, writeExif, type MetaGroup } from '@/lib/metadata';
 import Link from 'next/link';
 
 export default function MetadataPage() {
@@ -17,6 +17,21 @@ export default function MetadataPage() {
   const [stripping, setStripping] = useState(false);
   const [stripDone, setStripDone] = useState(0);
   const [singleFile, setSingleFile] = useState<File | null>(null);
+
+  // ── Write tab: EXIF 写入 ──
+  const [writeFile, setWriteFile] = useState<File | null>(null);
+  const [artist, setArtist] = useState('');
+  const [copyright, setCopyright] = useState('');
+  const [description, setDescription] = useState('');
+  const [make, setMake] = useState('');
+  const [model, setModel] = useState('');
+  const [dateTime, setDateTime] = useState('');
+  const [software, setSoftware] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [altitude, setAltitude] = useState('');
+  const [writing, setWriting] = useState(false);
+  const [writeDone, setWriteDone] = useState(false);
 
   // ── Read tab ──
   const handleFile = useCallback(async (file: File) => {
@@ -69,6 +84,33 @@ export default function MetadataPage() {
       setStripDone(1);
     } catch { alert('清除失败'); }
     setStripping(false);
+  };
+
+  const handleWriteExif = async () => {
+    if (!writeFile) return;
+    setWriting(true); setWriteDone(false);
+    try {
+      const blob = await writeExif(writeFile, {
+        artist: artist || undefined,
+        copyright: copyright || undefined,
+        description: description || undefined,
+        make: make || undefined,
+        model: model || undefined,
+        dateTime: dateTime || undefined,
+        software: software || undefined,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
+        altitude: altitude ? parseFloat(altitude) : undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = writeFile.name.replace(/\.[^/.]+$/, '') + '_tagged.jpg';
+      a.click();
+      URL.revokeObjectURL(url);
+      setWriteDone(true);
+    } catch { alert('写入失败'); }
+    setWriting(false);
   };
 
   return (
@@ -179,6 +221,75 @@ export default function MetadataPage() {
                 </button>
               )}
               {stripDone === 1 && <p className="meta-done">已完成</p>}
+            </div>
+          </div>
+
+          {/* EXIF 写入 */}
+          <div className="meta-card">
+            <div className="meta-card-head">
+              <span>写入 EXIF 信息</span>
+              <small>为 JPEG 添加版权、作者、拍摄参数、GPS 位置等元数据。全部在本地完成，不上传。</small>
+            </div>
+            <div className="meta-form">
+              <div className="meta-form-row">
+                <button className="meta-btn meta-btn-outline" onClick={() => document.getElementById('write-input')?.click()}>
+                  {writeFile ? writeFile.name : '选择 JPEG 文件'}
+                </button>
+                <input id="write-input" type="file" accept="image/jpeg" className="meta-file-hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setWriteFile(f); setWriteDone(false); } }} />
+              </div>
+
+              <div className="meta-form-section-title">版权与描述</div>
+              <div className="meta-form-row">
+                <label>作者 / 摄影师</label>
+                <input type="text" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="例如：StorePic Works" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>版权信息</label>
+                <input type="text" value={copyright} onChange={(e) => setCopyright(e.target.value)} placeholder="例如：© 2026 StorePic Works" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>图片描述</label>
+                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="例如：春季新品 纯棉T恤 白色" className="meta-input" />
+              </div>
+
+              <div className="meta-form-section-title">拍摄信息</div>
+              <div className="meta-form-row">
+                <label>相机厂商</label>
+                <input type="text" value={make} onChange={(e) => setMake(e.target.value)} placeholder="例如：Canon" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>相机型号</label>
+                <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="例如：EOS R6 Mark II" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>处理软件</label>
+                <input type="text" value={software} onChange={(e) => setSoftware(e.target.value)} placeholder="例如：Adobe Lightroom" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>拍摄时间</label>
+                <input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)} className="meta-input" />
+              </div>
+
+              <div className="meta-form-section-title">GPS 位置</div>
+              <div className="meta-form-row">
+                <label>纬度（正=北纬，负=南纬，例如：31.2304）</label>
+                <input type="text" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="例如：31.2304（北纬 31.23°）" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>经度（正=东经，负=西经，例如：121.4737）</label>
+                <input type="text" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="例如：121.4737（东经 121.47°）" className="meta-input" />
+              </div>
+              <div className="meta-form-row">
+                <label>海拔（米）</label>
+                <input type="text" value={altitude} onChange={(e) => setAltitude(e.target.value)} placeholder="例如：4.5" className="meta-input" />
+              </div>
+
+              <div className="meta-actions">
+                <button className="meta-btn" onClick={handleWriteExif} disabled={!writeFile || writing}>
+                  {writing ? '写入中...' : '写入 EXIF 并下载'}
+                </button>
+                {writeDone && <p className="meta-done">写入完成 ✓</p>}
+              </div>
             </div>
           </div>
         </div>

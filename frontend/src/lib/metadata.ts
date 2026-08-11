@@ -99,17 +99,69 @@ export async function extractMetadata(file: File): Promise<MetaGroup[]> {
 }
 
 /** 清除 JPEG 的 EXIF：重新编码到 canvas 再导出（无元数据） */
-/** 写入 EXIF 字段（版权/作者/描述）*/
-export async function writeExif(file: File, fields: { artist?: string; copyright?: string; description?: string }): Promise<Blob> {
+/** 写入 EXIF 字段（版权/作者/描述/GPS/拍摄信息）*/
+export async function writeExif(
+  file: File,
+  fields: {
+    artist?: string;
+    copyright?: string;
+    description?: string;
+    // 拍摄信息
+    make?: string;
+    model?: string;
+    dateTime?: string;       // "YYYY:MM:DD HH:MM:SS" 或 Date
+    software?: string;
+    // GPS
+    latitude?: number;       // 十进制，正=北纬 负=南纬
+    longitude?: number;      // 十进制，正=东经 负=西经
+    altitude?: number;       // 米
+  },
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const jpeg = reader.result as string;
-        const exifObj: any = { '0th': {}, 'Exif': {} };
+        const exifObj: any = { '0th': {}, Exif: {}, GPS: {} };
+
+        // ── 0th IFD ──
+        if (fields.make) exifObj['0th'][piexif.ImageIFD.Make] = fields.make;
+        if (fields.model) exifObj['0th'][piexif.ImageIFD.Model] = fields.model;
+        if (fields.software) exifObj['0th'][piexif.ImageIFD.Software] = fields.software;
         if (fields.artist) exifObj['0th'][piexif.ImageIFD.Artist] = fields.artist;
         if (fields.copyright) exifObj['0th'][piexif.ImageIFD.Copyright] = fields.copyright;
         if (fields.description) exifObj['0th'][piexif.ImageIFD.ImageDescription] = fields.description;
+        if (fields.dateTime) {
+          const dt = typeof fields.dateTime === 'string' ? fields.dateTime : formatExifDateTime(fields.dateTime);
+          exifObj['0th'][piexif.ImageIFD.DateTime] = dt;
+        }
+
+        // ── Exif IFD ──
+        if (fields.dateTime) {
+          const dt = typeof fields.dateTime === 'string' ? fields.dateTime : formatExifDateTime(fields.dateTime);
+          exifObj['Exif'][piexif.ExifIFD.DateTimeOriginal] = dt;
+        }
+
+        // ── GPS IFD ──
+        if (fields.latitude !== undefined) {
+          const lat = fields.latitude;
+          exifObj['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? 'N' : 'S';
+          exifObj['GPS'][piexif.GPSIFD.GPSLatitude] = decimalToRational(Math.abs(lat));
+        }
+        if (fields.longitude !== undefined) {
+          const lon = fields.longitude;
+          exifObj['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon >= 0 ? 'E' : 'W';
+          exifObj['GPS'][piexif.GPSIFD.GPSLongitude] = decimalToRational(Math.abs(lon));
+        }
+        if (fields.altitude !== undefined) {
+          const alt = fields.altitude;
+          exifObj['GPS'][piexif.GPSIFD.GPSAltitudeRef] = alt >= 0 ? 0 : 1;
+          exifObj['GPS'][piexif.GPSIFD.GPSAltitude] = [Math.round(Math.abs(alt) * 100), 100];
+        }
+
+        // 没有 GPS 数据就不要 GPS 段
+        if (Object.keys(exifObj.GPS).length === 0) delete exifObj.GPS;
+
         const exifBytes = piexif.dump(exifObj);
         const newJpeg = piexif.insert(exifBytes, jpeg);
         const arr = new Uint8Array(newJpeg.length);
@@ -139,6 +191,32 @@ export async function stripExif(file: File): Promise<Blob> {
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片加载失败')); };
     img.src = url;
   });
+}
+
+// ── 写入辅助 ──
+
+/** 十进制角度 → EXIF 有理数数组 [[度], [分], [秒]] */
+function decimalToRational(degrees: number): [number, number][] {
+  const d = Math.floor(degrees);
+  const m = Math.floor((degrees - d) * 60);
+  const s = Math.round((degrees - d - m / 60) * 3600 * 100);
+  return [
+    [d, 1],
+    [m, 1],
+    [s, 100],
+  ];
+}
+
+/** 格式化 EXIF 日期字符串 "YYYY:MM:DD HH:MM:SS" */
+function formatExifDateTime(val: Date | string): string {
+  const d = typeof val === 'string' ? new Date(val) : val;
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, '0');
+  const D = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${Y}:${M}:${D} ${h}:${m}:${s}`;
 }
 
 // ── 格式化辅助 ──

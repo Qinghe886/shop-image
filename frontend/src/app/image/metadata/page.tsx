@@ -21,6 +21,7 @@ export default function MetadataPage() {
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const [stripping, setStripping] = useState(false);
   const [stripDone, setStripDone] = useState(0);
+  const [singleFile, setSingleFile] = useState<File | null>(null);
   const [writeFile, setWriteFile] = useState<File | null>(null);
   const [artist, setArtist] = useState('');
   const [copyright, setCopyright] = useState('');
@@ -32,7 +33,7 @@ export default function MetadataPage() {
     setLoading(true);
     setGroups([]);
     try { const result = await extractMetadata(file); setGroups(result); }
-    catch { setGroups([{ label: '错误', items: [{ key: '解析', value: '无法读取元数据' }] }]); }
+    catch (e) { setGroups([{ label: '错误', items: [{ key: '解析', value: '无法读取元数据' }] }]); }
     finally { setLoading(false); }
   }, []);
 
@@ -47,7 +48,7 @@ export default function MetadataPage() {
         const a = document.createElement('a'); a.href = url;
         a.download = file.name.replace(/\.[^/.]+$/, '') + '_已清除隐私.jpg'; a.click();
         URL.revokeObjectURL(url); setStripDone((c) => c + 1);
-      } catch { /* skip */ }
+      } catch (e) { /* skip */ }
     }
     setStripping(false);
   };
@@ -60,16 +61,19 @@ export default function MetadataPage() {
       const a = document.createElement('a'); a.href = url;
       a.download = writeFile.name.replace(/\.[^/.]+$/, '') + '_已写入.jpg'; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('写入失败'); }
+    } catch (e) { alert('写入失败'); }
     setWriting(false);
   };
 
   const singleStrip = async () => {
+    if (!singleFile) return; setStripping(true);
+    try {
+      const blob = await stripExif(singleFile);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = singleFile.name.replace(/\.[^/.]+$/, '') + '_已清除隐私.jpg'; a.click();
       URL.revokeObjectURL(url); setStripDone(1);
-    } catch { alert('清除失败'); }
+    } catch (e) { alert('清除失败'); }
     setStripping(false);
   };
 

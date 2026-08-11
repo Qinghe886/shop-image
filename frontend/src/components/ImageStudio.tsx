@@ -396,9 +396,9 @@ export default function ImageStudio({ selectedPresetId, presetRequestVersion, on
                 {(['white', 'red', 'blue'] as const).map((key) => (
                   <button type="button" key={key} className={`bg-color-swatch ${idPhotoSettings.bgPreset === key ? 'active' : ''}`} style={{ background: getBgColorHex(key, '') }} title={getBgColorHex(key, '')} onClick={() => setIdPhotoSettings((s) => ({ ...s, bgPreset: key }))} />
                 ))}
-                <label className="bg-color-swatch" style={{ background: idPhotoSettings.bgCustomColor, cursor: 'pointer' }}>
-                  <input type="color" value={idPhotoSettings.bgCustomColor} onChange={(e) => setIdPhotoSettings((s) => ({ ...s, bgPreset: 'custom', bgCustomColor: e.target.value }))} />
-                </label>
+                <button type="button" className={`bg-color-swatch ${idPhotoSettings.bgPreset === 'custom' ? 'active' : ''}`} style={{ background: idPhotoSettings.bgCustomColor }} onClick={() => document.getElementById('custom-color-input')?.click()}>
+                  <input id="custom-color-input" type="color" value={idPhotoSettings.bgCustomColor} className="color-input-hidden" onChange={(e) => setIdPhotoSettings((s) => ({ ...s, bgPreset: 'custom', bgCustomColor: e.target.value }))} />
+                </button>
               </div>
               <div className="bg-label-row">{(['white', 'red', 'blue'] as const).map((key) => <span key={key}>{getBgColorHex(key, '') === '#FFFFFF' ? '白色' : getBgColorHex(key, '') === '#FF0000' ? '红色' : '蓝色'}</span>)}<span>自定义</span></div>
             </div>

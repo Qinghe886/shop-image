@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { extractMetadata, stripExif, type MetaGroup } from '@/lib/metadata';
+import { extractMetadata, stripExif, writeExif, type MetaGroup } from '@/lib/metadata';
 import Link from 'next/link';
 
 function CameraIcon() { return (<svg viewBox="0 0 48 48" fill="none" className="meta-svg"><rect x="6" y="12" width="36" height="26" rx="4" stroke="currentColor" strokeWidth="2.5"/><circle cx="24" cy="25" r="7" stroke="currentColor" strokeWidth="2.5"/><circle cx="24" cy="25" r="2.5" fill="currentColor"/><path d="M16 12l2-5h12l2 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>); }
@@ -21,7 +21,11 @@ export default function MetadataPage() {
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const [stripping, setStripping] = useState(false);
   const [stripDone, setStripDone] = useState(0);
-  const [singleFile, setSingleFile] = useState<File | null>(null);
+  const [writeFile, setWriteFile] = useState<File | null>(null);
+  const [artist, setArtist] = useState('');
+  const [copyright, setCopyright] = useState('');
+  const [description, setDescription] = useState('');
+  const [writing, setWriting] = useState(false);
 
   const handleFile = useCallback(async (file: File) => {
     setFileName(file.name);
@@ -48,10 +52,19 @@ export default function MetadataPage() {
     setStripping(false);
   };
 
-  const singleStrip = async () => {
-    if (!singleFile) return; setStripping(true);
+  const handleWrite = async () => {
+    if (!writeFile) return; setWriting(true);
     try {
-      const blob = await stripExif(singleFile);
+      const blob = await writeExif(writeFile, { artist, copyright, description });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = writeFile.name.replace(/\.[^/.]+$/, '') + '_已写入.jpg'; a.click();
+      URL.revokeObjectURL(url);
+    } catch { alert('写入失败'); }
+    setWriting(false);
+  };
+
+  const singleStrip = async () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = singleFile.name.replace(/\.[^/.]+$/, '') + '_已清除隐私.jpg'; a.click();
@@ -139,6 +152,27 @@ export default function MetadataPage() {
                   {stripping ? '处理中...' : `清除隐私数据并下载（${batchFiles.length} 张）`}
                 </button>
                 {stripDone > 0 && <p className="meta-done">已处理 {stripDone} / {batchFiles.length} 张</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="meta-card">
+            <div className="meta-card-head">
+              <span>写入版权信息</span>
+              <small>选择 JPEG 照片，添加作者、版权、描述后下载</small>
+            </div>
+            <div className="meta-actions">
+              <button className="meta-btn meta-btn-outline" onClick={() => document.getElementById('write-input')?.click()}>
+                {writeFile ? writeFile.name : '选择 JPEG 照片'}
+              </button>
+              <input id="write-input" type="file" accept="image/jpeg" className="meta-file-hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setWriteFile(f); }} />
+            </div>
+            {writeFile && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                <input className="meta-input" placeholder="作者（如：张三）" value={artist} onChange={(e) => setArtist(e.target.value)} />
+                <input className="meta-input" placeholder="版权（如：© 2026 张三 保留所有权利）" value={copyright} onChange={(e) => setCopyright(e.target.value)} />
+                <input className="meta-input" placeholder="描述（如：产品白底图）" value={description} onChange={(e) => setDescription(e.target.value)} />
+                <button className="meta-btn" onClick={handleWrite} disabled={writing}>{writing ? '写入中...' : '写入并下载'}</button>
               </div>
             )}
           </div>

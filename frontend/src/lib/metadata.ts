@@ -3,6 +3,7 @@
  * 依赖 exifr 解析 EXIF/IPTC/XMP/GPS
  */
 import exifr from 'exifr';
+import piexif from 'piexifjs';
 
 export interface MetaGroup {
   label: string;
@@ -40,54 +41,43 @@ export async function extractMetadata(file: File): Promise<MetaGroup[]> {
     }
 
     // 相机信息
-    const cameraItems: { key: string; value: string }[] = [];
-    if (data.Make) cameraItems.push({ key: '相机制造商', value: String(data.Make) });
-    if (data.Model) cameraItems.push({ key: '相机型号', value: String(data.Model) });
-    if (data.LensModel) cameraItems.push({ key: '镜头型号', value: String(data.LensModel) });
-    if (data.Software) cameraItems.push({ key: '处理软件', value: String(data.Software) });
-    if (cameraItems.length > 0) groups.push({ label: '相机信息', items: cameraItems });
+    groups.push({ label: '相机信息', items: [
+      { key: '相机制造商', value: data.Make ? String(data.Make) : '无' },
+      { key: '相机型号', value: data.Model ? String(data.Model) : '无' },
+      { key: '镜头型号', value: data.LensModel ? String(data.LensModel) : '无' },
+      { key: '处理软件', value: data.Software ? String(data.Software) : '无' },
+    ]});
 
     // 拍摄参数
-    const shootItems: { key: string; value: string }[] = [];
-    if (data.DateTimeOriginal) shootItems.push({ key: '拍摄时间', value: formatDate(data.DateTimeOriginal) });
-    if (data.CreateDate) shootItems.push({ key: '创建时间', value: formatDate(data.CreateDate) });
-    if (data.ModifyDate) shootItems.push({ key: '修改时间', value: formatDate(data.ModifyDate) });
-    if (data.ExposureTime) shootItems.push({ key: '曝光时间', value: formatExposure(data.ExposureTime) });
-    if (data.FNumber) shootItems.push({ key: '光圈', value: 'f/' + data.FNumber });
-    if (data.ISO) shootItems.push({ key: 'ISO', value: String(data.ISO) });
-    if (data.FocalLength) shootItems.push({ key: '焦距', value: data.FocalLength + 'mm' });
-    if (data.FocalLengthIn35mmFormat) shootItems.push({ key: '35mm 等效焦距', value: data.FocalLengthIn35mmFormat + 'mm' });
-    if (data.Flash) shootItems.push({ key: '闪光灯', value: formatFlash(data.Flash) });
-    if (data.WhiteBalance) shootItems.push({ key: '白平衡', value: typeof data.WhiteBalance === 'number' ? String(data.WhiteBalance) : String(data.WhiteBalance) });
-    if (data.MeteringMode) shootItems.push({ key: '测光模式', value: String(data.MeteringMode) });
-    if (data.ExposureCompensation !== undefined) shootItems.push({ key: '曝光补偿', value: data.ExposureCompensation + ' EV' });
-    if (shootItems.length > 0) groups.push({ label: '拍摄参数', items: shootItems });
+    groups.push({ label: '拍摄参数', items: [
+      { key: '拍摄时间', value: data.DateTimeOriginal ? formatDate(data.DateTimeOriginal) : '无' },
+      { key: '曝光时间', value: data.ExposureTime ? formatExposure(data.ExposureTime) : '无' },
+      { key: '光圈', value: data.FNumber ? 'f/' + data.FNumber : '无' },
+      { key: 'ISO', value: data.ISO ? String(data.ISO) : '无' },
+      { key: '焦距', value: data.FocalLength ? data.FocalLength + 'mm' : '无' },
+      { key: '闪光灯', value: data.Flash !== undefined ? formatFlash(data.Flash) : '无' },
+      { key: '曝光补偿', value: data.ExposureCompensation !== undefined ? data.ExposureCompensation + ' EV' : '无' },
+    ]});
 
     // 图片属性
-    const imgItems: { key: string; value: string }[] = [];
-    if (data.ImageWidth && data.ImageHeight) imgItems.push({ key: '尺寸', value: data.ImageWidth + ' × ' + data.ImageHeight + ' px' });
-    if (data.Orientation) imgItems.push({ key: '方向', value: String(data.Orientation) });
-    if (data.ColorSpace) imgItems.push({ key: '色彩空间', value: typeof data.ColorSpace === 'number' ? (data.ColorSpace === 1 ? 'sRGB' : 'Adobe RGB') : String(data.ColorSpace) });
-    if (imgItems.length > 0) groups.push({ label: '图片属性', items: imgItems });
+    groups.push({ label: '图片属性', items: [
+      { key: '尺寸', value: (data.ImageWidth && data.ImageHeight) ? data.ImageWidth + ' × ' + data.ImageHeight + ' px' : '未知' },
+      { key: '色彩空间', value: data.ColorSpace ? (typeof data.ColorSpace === 'number' ? (data.ColorSpace === 1 ? 'sRGB' : 'Adobe RGB') : String(data.ColorSpace)) : '无' },
+    ]});
 
     // GPS 位置
-    if (data.latitude !== undefined && data.longitude !== undefined) {
-      groups.push({
-        label: 'GPS 位置',
-        items: [
-          { key: '纬度', value: data.latitude.toFixed(6) },
-          { key: '经度', value: data.longitude.toFixed(6) },
-          ...(data.GPSAltitude !== undefined ? [{ key: '海拔', value: data.GPSAltitude.toFixed(1) + 'm' }] : []),
-        ],
-      });
-    }
+    groups.push({ label: 'GPS 位置', items: [
+      { key: '纬度', value: data.latitude !== undefined ? data.latitude.toFixed(6) : '无' },
+      { key: '经度', value: data.longitude !== undefined ? data.longitude.toFixed(6) : '无' },
+      { key: '海拔', value: data.GPSAltitude !== undefined ? data.GPSAltitude.toFixed(1) + 'm' : '无' },
+    ]});
 
     // 版权 & 作者
-    const rightsItems: { key: string; value: string }[] = [];
-    if (data.Copyright) rightsItems.push({ key: '版权', value: String(data.Copyright) });
-    if (data.Artist) rightsItems.push({ key: '作者', value: String(data.Artist) });
-    if (data.ImageDescription) rightsItems.push({ key: '描述', value: String(data.ImageDescription) });
-    if (rightsItems.length > 0) groups.push({ label: '版权与作者', items: rightsItems });
+    groups.push({ label: '版权与作者', items: [
+      { key: '版权', value: data.Copyright ? String(data.Copyright) : '无' },
+      { key: '作者', value: data.Artist ? String(data.Artist) : '无' },
+      { key: '描述', value: data.ImageDescription ? String(data.ImageDescription) : '无' },
+    ]});
 
     // PNG 文本块
     const pngItems: { key: string; value: string }[] = [];
@@ -109,6 +99,29 @@ export async function extractMetadata(file: File): Promise<MetaGroup[]> {
 }
 
 /** 清除 JPEG 的 EXIF：重新编码到 canvas 再导出（无元数据） */
+/** 写入 EXIF 字段（版权/作者/描述）*/
+export async function writeExif(file: File, fields: { artist?: string; copyright?: string; description?: string }): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const jpeg = reader.result as string;
+        const exifObj: any = { '0th': {}, 'Exif': {} };
+        if (fields.artist) exifObj['0th'][piexif.ImageIFD.Artist] = fields.artist;
+        if (fields.copyright) exifObj['0th'][piexif.ImageIFD.Copyright] = fields.copyright;
+        if (fields.description) exifObj['0th'][piexif.ImageIFD.ImageDescription] = fields.description;
+        const exifBytes = piexif.dump(exifObj);
+        const newJpeg = piexif.insert(exifBytes, jpeg);
+        const arr = new Uint8Array(newJpeg.length);
+        for (let i = 0; i < newJpeg.length; i++) arr[i] = newJpeg.charCodeAt(i) & 0xff;
+        resolve(new Blob([arr], { type: 'image/jpeg' }));
+      } catch (e) { reject(e); }
+    };
+    reader.onerror = () => reject(new Error('读取失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function stripExif(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();

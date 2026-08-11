@@ -121,9 +121,23 @@ export async function writeExif(
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const jpeg = reader.result as string;
+        const buffer = reader.result as ArrayBuffer;
+        const bytes = new Uint8Array(buffer);
+
+        // ArrayBuffer → binary string（分块避免栈溢出）
+        let jpegStr = '';
+        const CHUNK = 8192;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          const end = Math.min(i + CHUNK, bytes.length);
+          const slice = bytes.subarray(i, end);
+          jpegStr += String.fromCharCode.apply(null, Array.from(slice) as any);
+        }
+
         // 先清除旧 EXIF，避免双重 APP1 段导致图片损坏
-        const cleanJpeg = piexif.remove(jpeg);
+        const dataUri = piexif.remove(jpegStr);
+        // remove 返回 data URI，手动解码回二进制字符串
+        const cleanBinary = atob(dataUri.split(',')[1]);
+
         const exifObj: any = { '0th': {}, Exif: {}, GPS: {} };
 
         // ── 0th IFD ──
@@ -165,14 +179,17 @@ export async function writeExif(
         if (Object.keys(exifObj.GPS).length === 0) delete exifObj.GPS;
 
         const exifBytes = piexif.dump(exifObj);
-        const newJpeg = piexif.insert(exifBytes, cleanJpeg);
-        const arr = new Uint8Array(newJpeg.length);
-        for (let i = 0; i < newJpeg.length; i++) arr[i] = newJpeg.charCodeAt(i) & 0xff;
-        resolve(new Blob([arr], { type: 'image/jpeg' }));
+        // insert 接受二进制字符串，返回二进制字符串
+        const newJpeg = piexif.insert(exifBytes, cleanBinary);
+
+        // 二进制字符串 → Uint8Array
+        const out = new Uint8Array(newJpeg.length);
+        for (let i = 0; i < newJpeg.length; i++) out[i] = newJpeg.charCodeAt(i);
+        resolve(new Blob([out], { type: 'image/jpeg' }));
       } catch (e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('读取失败'));
-    reader.readAsDataURL(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 

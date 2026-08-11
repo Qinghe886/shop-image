@@ -8,7 +8,6 @@ import { convertImage, formatBytes, processIdPhoto } from '@/lib/image';
 import { platformPresets } from '@/lib/presets';
 import { idPhotoSpecs, idPhotoPaperSizes, getBgColorHex, getSpecByAspect } from '@/lib/idphoto-specs';
 import { renderPrintLayout } from '@/lib/print-layout';
-import MetadataPanel from '@/components/MetadataPanel';
 import type { CropAspect, CropSettings, IdPhotoSettings, ImageItem, OutputSettings, PresetId, StudioMode } from '@/lib/types';
 
 const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -342,11 +341,8 @@ export default function ImageStudio({ selectedPresetId, presetRequestVersion, on
           <button type="button" className={mode === 'ecommerce' ? 'active' : ''} aria-pressed={mode === 'ecommerce'} onClick={() => selectPreset(selectedPresetId)}><span>电商预设</span><small>平台快速设置</small></button>
           <button type="button" className={mode === 'general' ? 'active' : ''} aria-pressed={mode === 'general'} onClick={() => switchMode('general')}><span>通用模式</span><small>压缩与转换</small></button>
           <button type="button" className={mode === 'idphoto' ? 'active' : ''} aria-pressed={mode === 'idphoto'} onClick={() => switchMode('idphoto')}><span>证件照</span><small>换底排版</small></button>
-          <button type="button" className={mode === 'metadata' ? 'active' : ''} aria-pressed={mode === 'metadata'} onClick={() => switchMode('metadata')}><span>元信息</span><small>EXIF查看清除</small></button>
         </div>
-        {mode === 'metadata' ? (
-          <MetadataPanel />
-        ) : mode === 'ecommerce' ? (
+        {mode === 'ecommerce' ? (
           <>
             <div className="setting-block">
               <label>电商预设</label>
